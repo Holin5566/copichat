@@ -2,11 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useState } from "react"
 
-/**
- * 訊息介面定義
- * 用於型別檢查和 IDE 自動完成
- */
-interface Message {
+interface IMessage {
   id: string
   userId: string
   userName: string
@@ -15,10 +11,7 @@ interface Message {
   avatar?: string
 }
 
-/**
- * 使用者介面定義
- */
-interface User {
+interface IUser {
   id: string
   name: string
   avatar?: string
@@ -28,11 +21,11 @@ interface User {
 /**
  * ChatContext 值的型別定義
  */
-interface ChatContextType {
+interface IChatContextType {
   // 狀態值
-  messages: Message[]
-  users: User[]
-  currentUser: User | null
+  messages: IMessage[]
+  users: IUser[]
+  currentUser: IUser | null
   isLoading: boolean
 
   // 方法
@@ -46,7 +39,7 @@ interface ChatContextType {
  * 建立 ChatContext
  * 用於全應用狀態管理
  */
-const ChatContext = createContext<ChatContextType | undefined>(undefined)
+const ChatContext = createContext<IChatContextType | undefined>(undefined)
 
 /**
  * ChatProvider 元件
@@ -54,13 +47,13 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined)
  */
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   // 訊息狀態
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<IMessage[]>([])
 
   // 線上使用者狀態
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<IUser[]>([])
 
   // 當前使用者狀態
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [currentUser, setCurrentUser] = useState<IUser | null>(null)
 
   // 載入狀態
   const [isLoading, setIsLoading] = useState(false)
@@ -86,7 +79,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 建立新訊息物件
-      const newMessage: Message = {
+      const newMessage: IMessage = {
         id: `${Date.now()}-${Math.random()}`,
         userId: currentUser.id,
         userName: currentUser.name,
@@ -116,7 +109,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 建立新使用者物件
-    const newUser: User = {
+    const newUser: IUser = {
       id: `user-${Date.now()}`,
       name: userName.trim(),
       joinedAt: new Date(),
@@ -130,7 +123,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setUsers((prev) => [...prev, newUser])
 
     // 發送系統訊息
-    const systemMessage: Message = {
+    const systemMessage: IMessage = {
       id: `sys-${Date.now()}`,
       userId: "system",
       userName: "系統",
@@ -160,7 +153,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setCurrentUser(null)
 
     // 發送系統訊息
-    const systemMessage: Message = {
+    const systemMessage: IMessage = {
       id: `sys-${Date.now()}`,
       userId: "system",
       userName: "系統",
@@ -180,7 +173,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // 組合 context 值
-  const value: ChatContextType = {
+  const value: IChatContextType = {
     messages,
     users,
     currentUser,
