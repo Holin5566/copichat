@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useCallback, useContext, useState } from "react"
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 interface IMessage {
   id: string
@@ -30,7 +30,7 @@ interface IChatContextType {
 
   // 方法
   sendMessage: (content: string) => void
-  joinChat: (userName: string) => void
+  joinChat: (userName: string, isSelf: boolean) => void
   leaveChat: () => void
   clearMessages: () => void
 }
@@ -101,7 +101,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
    * - 添加到線上使用者列表
    * - 發送系統訊息
    */
-  const joinChat = useCallback((userName: string) => {
+  const joinChat = useCallback((userName: string, isSelf: boolean = false) => {
     // 檢查使用者名稱
     if (!userName.trim()) {
       console.warn("使用者名稱不能為空")
@@ -116,9 +116,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`
     }
 
-    // 設定當前使用者
-    setCurrentUser(newUser)
-
+    if (isSelf) {
+      setCurrentUser(newUser)
+    }
     // 添加到線上使用者列表
     setUsers((prev) => [...prev, newUser])
 
@@ -184,6 +184,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     clearMessages
   }
 
+  useEffect(() => {
+    mockChatResponder(
+      joinChat,
+      (botMessage: IMessage) => setMessages((prev) => [...prev, botMessage]))
+    }, [])
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
 }
 
@@ -201,3 +206,45 @@ export function useChat() {
 
   return context
 }
+
+function mockChatResponder(joinChat:(userName: string) => void, onMessage: (message: IMessage) => void) {
+  const botResponses = [
+    "今天過得怎麼樣？",
+    "你喜歡聊天嗎？",
+    "告訴我一個笑話吧！",
+    "你最喜歡的電影是什麼？",
+    "你有什麼興趣愛好？",
+    "你覺得人工智慧未來會怎麼發展？",
+    "你喜歡旅行嗎？最想去的地方是哪裡？",
+    "你平常喜歡聽什麼音樂？",
+    "你有養寵物嗎？牠們是什麼品種？",
+    "你最喜歡的食物是什麼？",
+    "你有什麼特別的才能或技能嗎？",
+    "你覺得人生的意義是什麼？",
+    "你喜歡閱讀嗎？最近在看什麼書？",
+    "你有沒有什麼夢想或目標？",
+    "你覺得科技對生活的影響是正面還是負面？",
+    "你喜歡運動嗎？最喜歡哪一種運動？",
+    "你有沒有什麼有趣的旅行經歷可以分享？",
+    "你覺得未來的世界會是什麼樣子？",
+    "你喜歡哪一種天氣？晴天還是雨天？",
+    "你有沒有什麼特別的嗜好或收藏？",
+  ]
+  joinChat("聊天機器人");
+  let preRandomIndex = 0;
+  setInterval(() => {
+    if (Math.random() < 0.3) return // 70% 機率不回應
+    let randomIndex = Math.floor(Math.random() * botResponses.length)
+    while (randomIndex === preRandomIndex) {
+      randomIndex = Math.floor(Math.random() * botResponses.length)
+    }
+    const botMessage: IMessage = {
+      id: `bot-${Date.now()}`,
+      userId: "bot",
+      userName: "聊天機器人",
+      content: botResponses[randomIndex],
+      timestamp: new Date()
+    }
+    onMessage(botMessage)
+  }, 3000) // 每秒發送一次訊息
+};

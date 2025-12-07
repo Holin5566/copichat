@@ -47,19 +47,19 @@ export function Header() {
       case "guest":
         if (data.guestName) {
           await guestLogin(data.guestName)
-          joinChat(data.guestName)
+          joinChat(data.guestName, true)
         }
         break
       case "login":
         if (data.username && data.password) {
           await login(data.username, data.password)
-          joinChat(data.username)
+          joinChat(data.username, true)
         }
         break
       case "signup":
         if (data.username && data.email && data.password) {
           await signup(data.username, data.email, data.password)
-          joinChat(data.username)
+          joinChat(data.username, true)
         }
         break
     }
