@@ -11,16 +11,21 @@ enum Role {
 interface IUserProfile {
   userName: string
   email: string
-  avatarUrl?: string // `https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`
-  bio?: string
+  avatarUrl: string // `https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`
+  bio: string
 }
-
+const emptyProfile: IUserProfile = {
+  userName: "",
+  email: "",
+  avatarUrl: "",
+  bio: ""
+}
 interface IAuthContextType {
   role: Role
   userId: string | null
   createdAt: Date | null
   isAuthenticated: boolean
-  profile: IUserProfile | null
+  profile: IUserProfile
 
   lastLoginAt: Date | null
   //TODO - tokens
@@ -31,6 +36,7 @@ interface IAuthContextType {
   //   isEmailVerified: boolean
 
   login: (userName: string, password: string) => Promise<void>
+  guestLogin: (guestName: string) => Promise<void>
   logout: () => void
   signup: (userName: string, email: string, password: string) => Promise<void>
   updateProfile: (data: IUserProfile) => Promise<void>
@@ -43,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null)
   const [createdAt, setCreatedAt] = useState<Date | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
-  const [profile, setProfile] = useState<IUserProfile | null>(null)
+  const [profile, setProfile] = useState<IUserProfile>(emptyProfile)
   const [lastLoginAt, setLastLoginAt] = useState<Date | null>(null)
 
   const errorHandler = (error: any) => {
@@ -53,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserId(null)
     setCreatedAt(null)
     setIsAuthenticated(false)
-    setProfile(null)
+    setProfile(emptyProfile)
     setLastLoginAt(null)
   }
 
@@ -76,12 +82,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const guestLogin = useCallback(async (guestName: string) => {
+    try {
+      await mockAsyncRequest(guestName)
+      setRole(Role.GUEST)
+      setUserId("guest-" + Math.random())
+      setCreatedAt(new Date())
+      setIsAuthenticated(true)
+      setProfile({
+        userName: guestName,
+        email: "",
+        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${guestName}`,
+        bio: "這是一個遊客使用者簡介範例。"
+      })
+      setLastLoginAt(new Date())
+    } catch (error) {
+      errorHandler(error)
+    }
+  }, [])
+
   const logout = useCallback(() => {
     setRole(Role.GUEST)
     setUserId(null)
     setCreatedAt(null)
     setIsAuthenticated(false)
-    setProfile(null)
+    setProfile(emptyProfile)
     setLastLoginAt(null)
     mockAsyncRequest().catch((error) => console.error(error))
   }, [])
@@ -122,6 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profile,
     lastLoginAt,
     login,
+    guestLogin,
     logout,
     signup,
     updateProfile

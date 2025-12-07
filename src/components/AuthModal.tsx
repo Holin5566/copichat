@@ -5,7 +5,7 @@ import React, { useState } from "react"
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
-  mode: "login" | "signup" | "guest"
+  mode: "none" | "login" | "signup" | "guest"
   onSubmit: (data: { username?: string; email?: string; password?: string; guestName?: string }) => void
 }
 
@@ -28,25 +28,23 @@ export function AuthModal({ isOpen, onClose, mode, onSubmit }: AuthModalProps) {
         return
       }
       onSubmit({ guestName })
-      setGuestName("")
     } else if (mode === "login") {
       if (!username.trim() || !password.trim()) {
         alert("請輸入帳號和密碼")
         return
       }
       onSubmit({ username, password })
-      setUsername("")
-      setPassword("")
     } else if (mode === "signup") {
       if (!username.trim() || !email.trim() || !password.trim()) {
         alert("請填寫所有欄位")
         return
       }
       onSubmit({ username, email, password })
-      setUsername("")
-      setEmail("")
-      setPassword("")
     }
+    setEmail("")
+    setPassword("")
+    setUsername("")
+    setGuestName("")
     onClose()
   }
 

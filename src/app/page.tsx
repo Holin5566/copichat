@@ -4,7 +4,8 @@ import { ChatStats } from "@/components/ChatStats"
 import { MessageInput } from "@/components/MessageInput"
 import { MessageList } from "@/components/MessageList"
 import { UserList } from "@/components/UserList"
-import { UserLogin } from "@/components/UserLogin"
+import { Header } from "@/components/UserLogin"
+import { AuthProvider } from "@/context/AuthContext"
 import { ChatProvider } from "@/context/ChatContext"
 
 /**
@@ -24,28 +25,30 @@ import { ChatProvider } from "@/context/ChatContext"
 export default function ChatPage() {
   return (
     <ChatProvider>
-      <div className="flex h-screen flex-col">
-        {/* 使用者登入區域 */}
-        <UserLogin />
+      <AuthProvider>
+        <div className="flex h-screen flex-col">
+          {/* 使用者登入區域 */}
+          <Header />
 
-        {/* 統計面板 */}
-        <ChatStats />
+          {/* 統計面板 */}
+          <ChatStats />
 
-        {/* 主聊天區域 */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* 訊息區域（左側） */}
-          <div className="flex-1 flex flex-col">
-            {/* 訊息列表 */}
-            <MessageList />
+          {/* 主聊天區域 */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* 訊息區域（左側） */}
+            <div className="flex-1 flex flex-col">
+              {/* 訊息列表 */}
+              <MessageList />
 
-            {/* 訊息輸入框 */}
-            <MessageInput />
+              {/* 訊息輸入框 */}
+              <MessageInput />
+            </div>
+
+            {/* 使用者列表（右側邊欄） */}
+            <UserList />
           </div>
-
-          {/* 使用者列表（右側邊欄） */}
-          <UserList />
         </div>
-      </div>
+      </AuthProvider>
     </ChatProvider>
   )
 }

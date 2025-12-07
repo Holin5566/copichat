@@ -1,5 +1,6 @@
 "use client"
 
+import { useAuth } from "@/context/AuthContext"
 import { useChat } from "@/context/ChatContext"
 import { useState } from "react"
 import { AuthModal } from "./AuthModal"
@@ -12,64 +13,75 @@ import { AuthModal } from "./AuthModal"
  * - 顯示當前使用者信息
  * - 離開聊天室功能
  */
-export function UserLogin() {
-  //TODO - login
-  // handle login
-  // handle signup
-  // handle logout
-  // handle guest login
-
+export function Header() {
   // 本地狀態
   const [showGuestModal, setShowGuestModal] = useState(false)
-  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [authMode, setAuthMode] = useState<"none" | "login" | "signup" | "guest">("none")
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   // 從 ChatContext 中取得相關方法和狀態
-  const { joinChat, leaveChat, currentUser } = useChat()
-
-  /**
-   * 處理遊客登入
-   */
-  const handleGuestLogin = (data: { guestName?: string }) => {
-    if (data.guestName) {
-      joinChat(data.guestName)
-    }
-  }
-
-  /**
-   * 處理帳號密碼登入
-   */
-  const handleLogin = (data: { username?: string; password?: string }) => {
-    if (data.username) {
-      // TODO: 接入實際的登入 API
-      joinChat(data.username)
-    }
-  }
+  const { leaveChat, joinChat } = useChat()
+  const { profile, isAuthenticated, guestLogin, login, signup, logout } = useAuth()
 
   /**
    * 處理離開聊天室
    */
   const handleLeave = () => {
     leaveChat()
+    logout()
   }
 
-  //TODO
-  // 1.預設遊客登入
-  // 2.登入按鈕 + 展開選單
-  // 3.註冊按鈕 + 展開選單
-  // 4.登入後顯示使用者資訊 + 登出按鈕
+  const handleShowAuthModal = (mode: "login" | "signup" | "guest") => {
+    setAuthMode(mode)
+    setShowAuthModal(true)
+  }
+
+  const handleCloseAuthModal = () => {
+    setShowAuthModal(false)
+    setAuthMode("none")
+  }
+
+  const handleAuthSubmit = async (data: {
+    username?: string
+    email?: string
+    password?: string
+    guestName?: string
+  }) => {
+    switch (authMode) {
+      case "guest":
+        if (data.guestName) {
+          await guestLogin(data.guestName)
+          joinChat(data.guestName)
+        }
+        break
+      case "login":
+        if (data.username && data.password) {
+          await login(data.username, data.password)
+          joinChat(data.username)
+        }
+        break
+      case "signup":
+        if (data.username && data.email && data.password) {
+          await signup(data.username, data.email, data.password)
+          joinChat(data.username)
+        }
+        break
+    }
+  }
+
   return (
     <div className="bg-white border-b border-gray-200 p-4">
-      {!currentUser ? (
+      {!isAuthenticated ? (
         /* 未登入狀態：顯示兩個按鈕 */
         <div className="flex gap-3 justify-center">
           <button
-            onClick={() => setShowGuestModal(true)}
+            onClick={() => handleShowAuthModal("guest")}
             className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
             遊客登入
           </button>
           <button
-            onClick={() => setShowLoginModal(true)}
+            onClick={() => handleShowAuthModal("login")}
             className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
           >
             登入
@@ -79,11 +91,11 @@ export function UserLogin() {
         /* 已登入狀態：顯示使用者信息和離開按鈕 */
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {currentUser.avatar && (
-              <img src={currentUser.avatar} alt={currentUser.name} className="w-10 h-10 rounded-full" />
+            {profile.avatarUrl && (
+              <img src={profile.avatarUrl} alt={profile.userName} className="w-10 h-10 rounded-full" />
             )}
             <div>
-              <p className="font-semibold text-gray-800">{currentUser.name}</p>
+              <p className="font-semibold text-gray-800">{profile.userName}</p>
               <p className="text-xs text-gray-500">已加入聊天室</p>
             </div>
           </div>
@@ -96,16 +108,8 @@ export function UserLogin() {
         </div>
       )}
 
-      {/* 遊客登入彈窗 */}
-      <AuthModal
-        isOpen={showGuestModal}
-        onClose={() => setShowGuestModal(false)}
-        mode="guest"
-        onSubmit={handleGuestLogin}
-      />
-
       {/* 登入彈窗 */}
-      <AuthModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} mode="login" onSubmit={handleLogin} />
+      <AuthModal isOpen={showAuthModal} mode={authMode} onClose={handleCloseAuthModal} onSubmit={handleAuthSubmit} />
     </div>
   )
 }
