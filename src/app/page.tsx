@@ -1,10 +1,10 @@
 "use client"
 
 import { ChatStats } from "@/components/ChatStats"
+import { Header } from "@/components/Header"
 import { MessageInput } from "@/components/MessageInput"
 import { MessageList } from "@/components/MessageList"
 import { UserList } from "@/components/UserList"
-import { Header } from "@/components/UserLogin"
 import { AuthProvider } from "@/context/AuthContext"
 import { ChatProvider } from "@/context/ChatContext"
 
