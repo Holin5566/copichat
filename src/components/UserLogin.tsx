@@ -15,7 +15,6 @@ import { AuthModal } from "./AuthModal"
  */
 export function Header() {
   // 本地狀態
-  const [showGuestModal, setShowGuestModal] = useState(false)
   const [authMode, setAuthMode] = useState<"none" | "login" | "signup" | "guest">("none")
   const [showAuthModal, setShowAuthModal] = useState(false)
 
@@ -85,6 +84,12 @@ export function Header() {
             className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
           >
             登入
+          </button>
+          <button
+            onClick={() => handleShowAuthModal("signup")}
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            註冊
           </button>
         </div>
       ) : (
