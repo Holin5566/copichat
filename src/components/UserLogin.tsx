@@ -2,12 +2,13 @@
 
 import { useChat } from "@/context/ChatContext"
 import { useState } from "react"
+import { AuthModal } from "./AuthModal"
 
 /**
  * 使用者登入元件
  * 功能：
- * - 輸入使用者名稱
- * - 加入聊天室
+ * - 遊客登入
+ * - 帳號密碼登入
  * - 顯示當前使用者信息
  * - 離開聊天室功能
  */
@@ -18,31 +19,34 @@ export function UserLogin() {
   // handle logout
   // handle guest login
 
-  // 本地狀態：暫存輸入的使用者名稱
-  const [userName, setUserName] = useState("")
+  // 本地狀態
+  const [showGuestModal, setShowGuestModal] = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
 
   // 從 ChatContext 中取得相關方法和狀態
   const { joinChat, leaveChat, currentUser } = useChat()
 
   /**
-   * 處理加入聊天室
-   * - 驗證使用者名稱
-   * - 呼叫 joinChat 方法
-   * - 清空輸入框
+   * 處理遊客登入
    */
-  const handleJoin = () => {
-    if (!userName.trim()) {
-      alert("請輸入使用者名稱")
-      return
+  const handleGuestLogin = (data: { guestName?: string }) => {
+    if (data.guestName) {
+      joinChat(data.guestName)
     }
+  }
 
-    joinChat(userName)
-    setUserName("")
+  /**
+   * 處理帳號密碼登入
+   */
+  const handleLogin = (data: { username?: string; password?: string }) => {
+    if (data.username) {
+      // TODO: 接入實際的登入 API
+      joinChat(data.username)
+    }
   }
 
   /**
    * 處理離開聊天室
-   * 呼叫 leaveChat 方法
    */
   const handleLeave = () => {
     leaveChat()
@@ -56,25 +60,19 @@ export function UserLogin() {
   return (
     <div className="bg-white border-b border-gray-200 p-4">
       {!currentUser ? (
-        /* 未登入狀態：顯示登入表單 */
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                handleJoin()
-              }
-            }}
-            placeholder="輸入使用者名稱"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
+        /* 未登入狀態：顯示兩個按鈕 */
+        <div className="flex gap-3 justify-center">
           <button
-            onClick={handleJoin}
+            onClick={() => setShowGuestModal(true)}
+            className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            遊客登入
+          </button>
+          <button
+            onClick={() => setShowLoginModal(true)}
             className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
           >
-            加入
+            登入
           </button>
         </div>
       ) : (
@@ -97,6 +95,17 @@ export function UserLogin() {
           </button>
         </div>
       )}
+
+      {/* 遊客登入彈窗 */}
+      <AuthModal
+        isOpen={showGuestModal}
+        onClose={() => setShowGuestModal(false)}
+        mode="guest"
+        onSubmit={handleGuestLogin}
+      />
+
+      {/* 登入彈窗 */}
+      <AuthModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} mode="login" onSubmit={handleLogin} />
     </div>
   )
 }
