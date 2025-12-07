@@ -15,8 +15,7 @@ import { AuthModal } from "./AuthModal"
  */
 export function Header() {
   // 本地狀態
-  const [authMode, setAuthMode] = useState<"none" | "login" | "signup" | "guest">("none")
-  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authModal, setAuthModal] = useState<"none" | "login" | "signup" | "guest">("none")
 
   // 從 ChatContext 中取得相關方法和狀態
   const { leaveChat, joinChat } = useChat()
@@ -31,13 +30,11 @@ export function Header() {
   }
 
   const handleShowAuthModal = (mode: "login" | "signup" | "guest") => {
-    setAuthMode(mode)
-    setShowAuthModal(true)
+    setAuthModal(mode)
   }
 
   const handleCloseAuthModal = () => {
-    setShowAuthModal(false)
-    setAuthMode("none")
+    setAuthModal("none")
   }
 
   const handleAuthSubmit = async (data: {
@@ -46,7 +43,7 @@ export function Header() {
     password?: string
     guestName?: string
   }) => {
-    switch (authMode) {
+    switch (authModal) {
       case "guest":
         if (data.guestName) {
           await guestLogin(data.guestName)
@@ -114,7 +111,12 @@ export function Header() {
       )}
 
       {/* 登入彈窗 */}
-      <AuthModal isOpen={showAuthModal} mode={authMode} onClose={handleCloseAuthModal} onSubmit={handleAuthSubmit} />
+      <AuthModal
+        isOpen={authModal !== "none"}
+        mode={authModal}
+        onClose={handleCloseAuthModal}
+        onSubmit={handleAuthSubmit}
+      />
     </div>
   )
 }
