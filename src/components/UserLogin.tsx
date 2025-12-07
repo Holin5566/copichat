@@ -12,7 +12,12 @@ import { useState } from "react"
  * - 離開聊天室功能
  */
 export function UserLogin() {
-  //TODO - 用戶登入功能
+  //TODO - login
+  // handle login
+  // handle signup
+  // handle logout
+  // handle guest login
+
   // 本地狀態：暫存輸入的使用者名稱
   const [userName, setUserName] = useState("")
 
@@ -43,6 +48,11 @@ export function UserLogin() {
     leaveChat()
   }
 
+  //TODO
+  // 1.預設遊客登入
+  // 2.登入按鈕 + 展開選單
+  // 3.註冊按鈕 + 展開選單
+  // 4.登入後顯示使用者資訊 + 登出按鈕
   return (
     <div className="bg-white border-b border-gray-200 p-4">
       {!currentUser ? (
