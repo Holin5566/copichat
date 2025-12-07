@@ -1,10 +1,11 @@
 # Next.js 聊天室專案 | Chat Application
 
-TypeScript + Next.js + Tailwind CSS 構建的實時聊天應用，適合面試作品展示。
+TypeScript + Next.js + Tailwind CSS 構建的實時聊天應用。
 
 ## 📋 專案特色
 
 ### 核心功能
+- ✅ **多模式認證系統** - 支援遊客登入、帳號登入、註冊功能
 - ✅ **實時聊天系統** - 支持多使用者同時在線聊天
 - ✅ **使用者管理** - 加入/離開聊天室，顯示線上人數
 - ✅ **訊息歷史** - 保存所有聊天訊息和系統事件
@@ -12,6 +13,8 @@ TypeScript + Next.js + Tailwind CSS 構建的實時聊天應用，適合面試�
 - ✅ **聊天統計** - 實時顯示訊息數和使用者統計
 
 ### 技術亮點
+- **雙 Context 架構** - AuthContext + ChatContext 分離關注點
+- **模組化認證系統** - AuthModal 支援多種登入模式
 - **React Context API** - 全應用狀態管理（useContext + useCallback）
 - **TypeScript** - 完整的類型定義和 IDE 支持
 - **Tailwind CSS** - 現代化的 UI 設計
@@ -24,11 +27,13 @@ TypeScript + Next.js + Tailwind CSS 構建的實時聊天應用，適合面試�
 src/
 ├── app/
 │   ├── page.tsx              # 主頁面，組裝所有元件
-│   └── layout.tsx            # 根布局
+│   └── layout.tsx            # 根布局，整合雙 Context
 ├── context/
-│   └── ChatContext.tsx       # 聊天狀態管理（useContext）
+│   ├── AuthContext.tsx       # 認證狀態管理
+│   └── ChatContext.tsx       # 聊天狀態管理
 └── components/
-    ├── UserLogin.tsx         # 使用者登入/登出
+    ├── AuthModal.tsx         # 認證彈窗（遊客/登入/註冊）
+    ├── UserLogin.tsx         # 使用者登入/登出介面
     ├── MessageList.tsx       # 訊息列表顯示
     ├── MessageInput.tsx      # 訊息輸入框
     ├── UserList.tsx          # 線上使用者列表
@@ -47,12 +52,25 @@ src/
 
 ## 📦 數據流設計
 
+### 雙 Context 架構
+
 ```
-ChatContext (useContext)
+AuthContext (認證狀態)
+    ↓
+    ├── profile: UserProfile         # 使用者資料
+    ├── isAuthenticated: boolean     # 認證狀態
+    ├── role: Role                   # 使用者角色
+    └── 方法:
+        ├── login()           # 帳號登入
+        ├── signup()          # 註冊
+        ├── guestLogin()      # 遊客登入
+        └── logout()          # 登出
+
+ChatContext (聊天狀態)
     ↓
     ├── messages: Message[]          # 聊天訊息
     ├── users: User[]                # 線上使用者
-    ├── currentUser: User | null     # 當前登入使用者
+    ├── currentUser: User | null     # 當前聊天使用者
     └── 方法:
         ├── sendMessage()     # 發送訊息
         ├── joinChat()        # 加入聊天室
@@ -60,7 +78,7 @@ ChatContext (useContext)
         └── clearMessages()   # 清空訊息
 ```
 
-所有子元件透過 `useChat` hook 連接到 ChatContext，實現組件間的數據共享和事件通信。
+所有子元件透過 `useAuth` 和 `useChat` hooks 連接到對應的 Context，實現關注點分離和組件間的數據共享。
 
 ## 🚀 快速開始
 
@@ -84,71 +102,94 @@ npm start
 
 ## 💡 核心設計概念
 
-### 1. Context API 狀態管理
-```typescript
-// ChatContext.tsx
-const ChatContext = createContext<ChatContextType | undefined>(undefined);
+### 1. 雙 Context 架構
+分離認證與聊天邏輯，提高可維護性和可測試性：
 
-export function ChatProvider({ children }: { children: React.ReactNode }) {
-  // 狀態定義
+```typescript
+// AuthContext.tsx - 處理認證邏輯
+export function AuthProvider({ children }) {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  const login = useCallback(async (username, password) => {
+    // 登入邏輯
+  }, []);
+  
+  const guestLogin = useCallback(async (name) => {
+    // 遊客登入邏輯
+  }, []);
+  
+  return <AuthContext.Provider value={...}>{children}</AuthContext.Provider>;
+}
+
+// ChatContext.tsx - 處理聊天邏輯
+export function ChatProvider({ children }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   
-  // 方法定義
   const sendMessage = useCallback((content: string) => {
-    // 業務邏輯...
+    // 聊天邏輯
   }, [currentUser]);
   
   return <ChatContext.Provider value={...}>{children}</ChatContext.Provider>;
 }
-
-// 使用 Hook
-export function useChat() {
-  const context = useContext(ChatContext);
-  return context; // 類型安全
-}
 ```
 
-### 2. 元件通信
-- **父 → 子**: Props 傳遞
-- **跨層級**: useChat hook 從 ChatContext 取得數據
-- **事件**: onClick → 方法 → 更新 context 狀態 → 自動重新渲染
+### 2. 模組化認證系統
+使用單一 AuthModal 元件支援多種認證模式：
 
-### 3. 代碼示例
-
-**登入元件**
 ```typescript
-export function UserLogin() {
-  const { joinChat, currentUser } = useChat(); // 取得 context 數據
+// AuthModal.tsx - 統一的認證彈窗
+<AuthModal 
+  mode="login" | "signup" | "guest"  // 三種模式
+  onSubmit={handleAuthSubmit}        // 父元件處理邏輯
+  onClose={handleClose}
+/>
+```
+
+### 3. 元件通信模式
+- **認證流程**: AuthModal → Header (UserLogin) → AuthContext
+- **聊天流程**: MessageInput → ChatContext → MessageList
+- **跨 Context**: useAuth() + useChat() 協同工作
+
+### 4. 代碼示例
+
+**認證元件**
+```typescript
+export function Header() {
+  const { login, signup, guestLogin } = useAuth();
+  const { joinChat } = useChat();
   
-  const handleJoin = () => {
-    joinChat(userName); // 呼叫 context 方法，自動更新狀態
+  const handleAuthSubmit = async (data) => {
+    // 先進行認證
+    await login(data.username, data.password);
+    // 再加入聊天室
+    joinChat(data.username);
   };
 }
 ```
 
-**訊息輸入**
+**聊天元件**
 ```typescript
 export function MessageInput() {
-  const { sendMessage, currentUser } = useChat();
+  const { sendMessage } = useChat();
+  const { isAuthenticated } = useAuth();
   
   const handleSend = () => {
-    sendMessage(inputValue); // 更新 messages 狀態
+    if (isAuthenticated) {
+      sendMessage(inputValue);
+    }
   };
-}
-```
-
-**訊息顯示**
-```typescript
-export function MessageList() {
-  const { messages } = useChat(); // 自動獲取最新訊息
-  
-  // messages 變化 → 自動重新渲染
-  return <div>{messages.map(...)}</div>;
 }
 ```
 
 ## ✨ 功能詳解
+
+### 認證系統
+- **遊客登入** - 快速進入聊天室，僅需輸入名稱
+- **帳號登入** - 使用帳號密碼登入
+- **註冊功能** - 建立新帳號，包含信箱驗證欄位
+- **統一 Modal** - 單一彈窗支援三種模式，減少程式碼重複
 
 ### 訊息系統
 - 實時訊息發送和接收
@@ -167,20 +208,10 @@ export function MessageList() {
 - 線上人數計算
 - 聊天室狀態顯示
 
-## 🎯 面試亮點
-
-1. **完整的狀態管理** - 展示對 React Context 的深入理解
-2. **TypeScript 類型系統** - 完整的介面定義和型別檢查
-3. **Clean Code 實踐** - 代碼組織清晰，註解完善
-4. **React Hooks** - useContext、useState、useCallback、useEffect 的正確使用
-5. **UI/UX 設計** - 響應式布局，用戶友好的交互設計
-6. **性能優化** - useCallback 避免不必要的重新渲染
-7. **錯誤處理** - 合理的邊界條件檢查和用戶提示
-
 ## 📝 常見問題
 
 ### Q: 為什麼使用 Context API 而不是 Redux？
-A: Context API 足以滿足此應用的狀態管理需求，避免過度設計。對於面試展示，展示對基礎 API 的深入理解更重要。
+A: Context API 足以滿足此應用的狀態管理需求，避免過度設計。
 
 ### Q: 如何擴展為持久化存儲？
 A: 可以使用 localStorage 或集成數據庫 API，在 useEffect 中同步狀態。
