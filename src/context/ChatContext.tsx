@@ -1,6 +1,7 @@
 "use client"
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { AiService } from "@/services/AiService"
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react"
 
 interface IMessage {
   id: string
@@ -26,12 +27,14 @@ interface IChatContextType {
   messages: IMessage[]
   users: IUser[]
   currentUser: IUser | null
+  bot: IUser | null
   isLoading: boolean
 
   // 方法
   sendMessage: (content: string) => void
   joinChat: (userName: string, isSelf: boolean) => void
   leaveChat: () => void
+  askAi: (question: string) => void
   clearMessages: () => void
 }
 
@@ -54,6 +57,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   // 當前使用者狀態
   const [currentUser, setCurrentUser] = useState<IUser | null>(null)
+
+  const [bot, setBot] = useState<IUser | null>(null)
 
   // 載入狀態
   const [isLoading, setIsLoading] = useState(false)
@@ -172,23 +177,57 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([])
   }, [])
 
+  const askAi = useCallback(
+    async (question: string): Promise<void> => {
+      setIsLoading(true)
+      const message = await AiService.postChat(question)
+      if (!bot) {
+        setIsLoading(false)
+        return
+      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          userId: bot.id || "ai-bot",
+          userName: bot.name || "AI 助手",
+          content: message,
+          timestamp: new Date(),
+          avatar: bot.avatar
+        }
+      ])
+      setIsLoading(false)
+    },
+    [bot]
+  )
   // 組合 context 值
   const value: IChatContextType = {
     messages,
     users,
     currentUser,
+    bot,
     isLoading,
     sendMessage,
+    askAi,
     joinChat,
     leaveChat,
     clearMessages
   }
 
   useEffect(() => {
-    mockChatResponder(
-      joinChat,
-      (botMessage: IMessage) => setMessages((prev) => [...prev, botMessage]))
-    }, [])
+    AiService.getHealth().then((healthy) => {
+      if (healthy) {
+        const bot = {
+          id: "ai-bot",
+          name: "AI 助手",
+          joinedAt: new Date(),
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=ai-bot`
+        }
+        setBot(bot)
+        setUsers((prev) => [...prev, bot])
+      }
+    })
+  }, [])
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
 }
 
@@ -206,45 +245,3 @@ export function useChat() {
 
   return context
 }
-
-function mockChatResponder(joinChat:(userName: string) => void, onMessage: (message: IMessage) => void) {
-  const botResponses = [
-    "今天過得怎麼樣？",
-    "你喜歡聊天嗎？",
-    "告訴我一個笑話吧！",
-    "你最喜歡的電影是什麼？",
-    "你有什麼興趣愛好？",
-    "你覺得人工智慧未來會怎麼發展？",
-    "你喜歡旅行嗎？最想去的地方是哪裡？",
-    "你平常喜歡聽什麼音樂？",
-    "你有養寵物嗎？牠們是什麼品種？",
-    "你最喜歡的食物是什麼？",
-    "你有什麼特別的才能或技能嗎？",
-    "你覺得人生的意義是什麼？",
-    "你喜歡閱讀嗎？最近在看什麼書？",
-    "你有沒有什麼夢想或目標？",
-    "你覺得科技對生活的影響是正面還是負面？",
-    "你喜歡運動嗎？最喜歡哪一種運動？",
-    "你有沒有什麼有趣的旅行經歷可以分享？",
-    "你覺得未來的世界會是什麼樣子？",
-    "你喜歡哪一種天氣？晴天還是雨天？",
-    "你有沒有什麼特別的嗜好或收藏？",
-  ]
-  joinChat("聊天機器人");
-  let preRandomIndex = 0;
-  setInterval(() => {
-    if (Math.random() < 0.3) return // 70% 機率不回應
-    let randomIndex = Math.floor(Math.random() * botResponses.length)
-    while (randomIndex === preRandomIndex) {
-      randomIndex = Math.floor(Math.random() * botResponses.length)
-    }
-    const botMessage: IMessage = {
-      id: `bot-${Date.now()}`,
-      userId: "bot",
-      userName: "聊天機器人",
-      content: botResponses[randomIndex],
-      timestamp: new Date()
-    }
-    onMessage(botMessage)
-  }, 3000) // 每秒發送一次訊息
-};

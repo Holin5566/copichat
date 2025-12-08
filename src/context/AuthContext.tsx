@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<IUserProfile>(emptyProfile)
   const [lastLoginAt, setLastLoginAt] = useState<Date | null>(null)
 
-  const errorHandler = (error: any) => {
+  const errorHandler = (error: unknown) => {
     console.error(error)
     alert("server error!")
     setRole(Role.GUEST)
@@ -162,7 +162,7 @@ export const useAuth = (): IAuthContextType => {
   return context
 }
 
-async function mockAsyncRequest(...data: any[]): Promise<void> {
+async function mockAsyncRequest(...data: unknown[]): Promise<void> {
   return new Promise<void>((resolve) => {
     setTimeout(() => resolve(), 100)
   })
