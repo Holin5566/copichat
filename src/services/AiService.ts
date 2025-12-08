@@ -13,8 +13,7 @@ class AiServiceClass {
             body: JSON.stringify({ message })
         });
         const data = await response.json();
-        console.error(data);
-        return data.reply;
+        return data.response;
     }
 
     public async getHealth(): Promise<boolean> {

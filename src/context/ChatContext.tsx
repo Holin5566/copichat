@@ -1,7 +1,7 @@
 "use client"
 
-import { AiService } from "@/services/AiService"
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react"
+import { AiService } from "@/services/AiService";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 interface IMessage {
   id: string
@@ -63,6 +63,29 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // 載入狀態
   const [isLoading, setIsLoading] = useState(false)
 
+  const askAi = useCallback(
+    async (question: string): Promise<void> => {
+      setIsLoading(true)
+      const message = await AiService.postChat(question)
+      if (!bot) {
+        setIsLoading(false)
+        return
+      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          userId: bot.id || "ai-bot",
+          userName: bot.name || "AI 助手",
+          content: message,
+          timestamp: new Date(),
+          avatar: bot.avatar
+        }
+      ])
+      setIsLoading(false)
+    },
+    [bot]
+  )
   /**
    * 發送訊息函數
    * - 驗證使用者和內容
@@ -95,8 +118,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
       // 更新訊息列表
       setMessages((prev) => [...prev, newMessage])
+      askAi(content.trim())
     },
-    [currentUser]
+    [currentUser, askAi]
   )
 
   /**
@@ -177,29 +201,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([])
   }, [])
 
-  const askAi = useCallback(
-    async (question: string): Promise<void> => {
-      setIsLoading(true)
-      const message = await AiService.postChat(question)
-      if (!bot) {
-        setIsLoading(false)
-        return
-      }
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}-${Math.random()}`,
-          userId: bot.id || "ai-bot",
-          userName: bot.name || "AI 助手",
-          content: message,
-          timestamp: new Date(),
-          avatar: bot.avatar
-        }
-      ])
-      setIsLoading(false)
-    },
-    [bot]
-  )
   // 組合 context 值
   const value: IChatContextType = {
     messages,
