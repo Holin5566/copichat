@@ -1,7 +1,7 @@
 "use client"
 
-import { AiService } from "@/services/AiService";
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { openaiService } from "@/services/openai.service"
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react"
 
 interface IMessage {
   id: string
@@ -65,24 +65,54 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const askAi = useCallback(
     async (question: string): Promise<void> => {
-      setIsLoading(true)
-      const message = await AiService.postChat(question)
       if (!bot) {
-        setIsLoading(false)
         return
       }
-      setMessages((prev) => [
-        ...prev,
-        {
+
+      setIsLoading(true)
+
+      try {
+        // 調用 OpenAI 服務
+        const result = await openaiService.chat(question)
+
+        // 檢查是否成功
+        if (result.success) {
+          // 成功回應
+          const aiMessage: IMessage = {
+            id: `${Date.now()}-${Math.random()}`,
+            userId: bot.id,
+            userName: bot.name,
+            content: result.response,
+            timestamp: new Date(),
+            avatar: bot.avatar
+          }
+          setMessages((prev) => [...prev, aiMessage])
+        } else {
+          // 錯誤回應
+          const errorMessage: IMessage = {
+            id: `${Date.now()}-${Math.random()}`,
+            userId: bot.id,
+            userName: bot.name,
+            content: `❌ ${result.error}`,
+            timestamp: new Date(),
+            avatar: bot.avatar
+          }
+          setMessages((prev) => [...prev, errorMessage])
+        }
+      } catch (error) {
+        console.error("AI 請求失敗:", error)
+        const errorMessage: IMessage = {
           id: `${Date.now()}-${Math.random()}`,
-          userId: bot.id || "ai-bot",
-          userName: bot.name || "AI 助手",
-          content: message,
+          userId: bot.id,
+          userName: bot.name,
+          content: "❌ 發生未預期的錯誤，請重試",
           timestamp: new Date(),
           avatar: bot.avatar
         }
-      ])
-      setIsLoading(false)
+        setMessages((prev) => [...prev, errorMessage])
+      } finally {
+        setIsLoading(false)
+      }
     },
     [bot]
   )
@@ -216,18 +246,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    AiService.getHealth().then((healthy) => {
-      if (healthy) {
-        const bot = {
-          id: "ai-bot",
-          name: "AI 助手",
-          joinedAt: new Date(),
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=ai-bot`
-        }
-        setBot(bot)
-        setUsers((prev) => [...prev, bot])
+    const initializeBot = async () => {
+      const aiBot: IUser = {
+        id: "ai-bot",
+        name: "AI 助手",
+        joinedAt: new Date(),
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=ai-bot`
       }
-    })
+      setBot(aiBot)
+      setUsers((prev) => [...prev, aiBot])
+    }
+
+    initializeBot()
   }, [])
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
 }

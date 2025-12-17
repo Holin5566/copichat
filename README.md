@@ -2,6 +2,10 @@
 
 TypeScript + Next.js + Tailwind CSS 構建的實時聊天應用。
 
+### 學習
+- **渲染優化** - 利用 useMemo React.Memo去優化渲染
+- **server component** - 釐清 server component 使用時機與優勢
+
 ### TODO
 - **多模式認證系統** - 支援遊客登入、帳號登入、註冊功能
 - **實時聊天系統** - 支持多使用者同時在線聊天
