@@ -1,6 +1,6 @@
 "use client"
 
-import { openaiService } from "@/services/openai.service"
+import { useSocket } from "@/hooks/useSocket"
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react"
 
 interface IMessage {
@@ -34,7 +34,6 @@ interface IChatContextType {
   sendMessage: (content: string) => void
   joinChat: (userName: string, isSelf: boolean) => void
   leaveChat: () => void
-  askAi: (question: string) => void
   clearMessages: () => void
 }
 
@@ -63,59 +62,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // 載入狀態
   const [isLoading, setIsLoading] = useState(false)
 
-  const askAi = useCallback(
-    async (question: string): Promise<void> => {
-      if (!bot) {
-        return
-      }
+  const room = useSocket()
 
-      setIsLoading(true)
-
-      try {
-        // 調用 OpenAI 服務
-        const result = await openaiService.chat(question)
-
-        // 檢查是否成功
-        if (result.success) {
-          // 成功回應
-          const aiMessage: IMessage = {
-            id: `${Date.now()}-${Math.random()}`,
-            userId: bot.id,
-            userName: bot.name,
-            content: result.response,
-            timestamp: new Date(),
-            avatar: bot.avatar
-          }
-          setMessages((prev) => [...prev, aiMessage])
-        } else {
-          // 錯誤回應
-          const errorMessage: IMessage = {
-            id: `${Date.now()}-${Math.random()}`,
-            userId: bot.id,
-            userName: bot.name,
-            content: `❌ ${result.error}`,
-            timestamp: new Date(),
-            avatar: bot.avatar
-          }
-          setMessages((prev) => [...prev, errorMessage])
-        }
-      } catch (error) {
-        console.error("AI 請求失敗:", error)
-        const errorMessage: IMessage = {
-          id: `${Date.now()}-${Math.random()}`,
-          userId: bot.id,
-          userName: bot.name,
-          content: "❌ 發生未預期的錯誤，請重試",
-          timestamp: new Date(),
-          avatar: bot.avatar
-        }
-        setMessages((prev) => [...prev, errorMessage])
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    [bot]
-  )
   /**
    * 發送訊息函數
    * - 驗證使用者和內容
@@ -136,21 +84,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      // 建立新訊息物件
-      const newMessage: IMessage = {
-        id: `${Date.now()}-${Math.random()}`,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        content: content.trim(),
-        timestamp: new Date(),
-        avatar: currentUser.avatar
-      }
-
-      // 更新訊息列表
-      setMessages((prev) => [...prev, newMessage])
-      askAi(content.trim())
+      room.sendMessage(content.trim())
     },
-    [currentUser, askAi]
+    [currentUser]
   )
 
   /**
@@ -178,18 +114,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     if (isSelf) {
       setCurrentUser(newUser)
     }
-    // 添加到線上使用者列表
-    setUsers((prev) => [...prev, newUser])
+    room.joinChat(newUser.name)
+    // // 添加到線上使用者列表
+    // setUsers((prev) => [...prev, newUser])
 
-    // 發送系統訊息
-    const systemMessage: IMessage = {
-      id: `sys-${Date.now()}`,
-      userId: "system",
-      userName: "系統",
-      content: `${userName} 加入了聊天室`,
-      timestamp: new Date()
-    }
-    setMessages((prev) => [...prev, systemMessage])
+    // // 發送系統訊息
+    // const systemMessage: IMessage = {
+    //   id: `sys-${Date.now()}`,
+    //   userId: "system",
+    //   userName: "系統",
+    //   content: `${userName} 加入了聊天室`,
+    //   timestamp: new Date()
+    // }
+    // setMessages((prev) => [...prev, systemMessage])
   }, [])
 
   /**
@@ -231,6 +168,43 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([])
   }, [])
 
+  // 監聽 WebSocket 訊息事件
+  useEffect(() => {
+    if (!room.socket) return
+
+    // 監聽 chat:message 事件
+    room.socket.on("chat:message", (message: IMessage) => {
+      console.log("收到訊息:", message)
+      setMessages((prev) => [...prev, message])
+    })
+
+    // 監聽 user:joined 事件
+    room.socket.on("user:joined", (data: { user: IUser; users: IUser[] }) => {
+      console.log("用戶加入:", data.user.name)
+      setUsers(data.users)
+    })
+
+    // 監聽 user:left 事件
+    room.socket.on("user:left", (data: { user: IUser; users: IUser[] }) => {
+      console.log("用戶離開:", data.user.name)
+      setUsers(data.users)
+    })
+
+    // 監聽 chat:history 事件
+    room.socket.on("chat:history", (history: IMessage[]) => {
+      console.log("收到聊天歷史:", history.length, "條訊息")
+      setMessages(history)
+    })
+
+    // 清理監聽
+    return () => {
+      room.socket?.off("chat:message")
+      room.socket?.off("user:joined")
+      room.socket?.off("user:left")
+      room.socket?.off("chat:history")
+    }
+  }, [room.socket])
+
   // 組合 context 值
   const value: IChatContextType = {
     messages,
@@ -239,7 +213,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     bot,
     isLoading,
     sendMessage,
-    askAi,
     joinChat,
     leaveChat,
     clearMessages
