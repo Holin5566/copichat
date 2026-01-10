@@ -87,6 +87,7 @@ io.on('connection', (socket) => {
 
         // 廣播訊息給所有連接的客戶端
         io.emit('chat:message', message);
+        messageHistory.push(message)
 
         console.log(`[訊息] ${user.userName}: ${data.content}`);
 

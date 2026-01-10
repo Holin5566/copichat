@@ -141,10 +141,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
 
     const userName = currentUser.name
-
-    // 從線上使用者列表移除
-    setUsers((prev) => prev.filter((user) => user.id !== currentUser.id))
-
     // 清空當前使用者
     setCurrentUser(null)
 
@@ -217,21 +213,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     leaveChat,
     clearMessages
   }
-
-  useEffect(() => {
-    const initializeBot = async () => {
-      const aiBot: IUser = {
-        id: "ai-bot",
-        name: "AI 助手",
-        joinedAt: new Date(),
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=ai-bot`
-      }
-      setBot(aiBot)
-      setUsers((prev) => [...prev, aiBot])
-    }
-
-    initializeBot()
-  }, [])
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
 }
 
