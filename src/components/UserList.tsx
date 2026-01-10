@@ -34,11 +34,11 @@ export function UserList() {
               className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
             >
               {/* 使用者頭像 */}
-              {user.avatar && <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />}
+              {user.avatar && <img src={user.avatar} alt={user.userName} className="w-8 h-8 rounded-full" />}
 
               {/* 使用者名稱容器 */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{user.name}</p>
+                <p className="text-sm font-medium text-gray-800 truncate">{user.userName}</p>
                 <p className="text-xs text-gray-400">
                   {/* 顯示加入時間 */}
                   {new Date(user.joinedAt).toLocaleTimeString("zh-TW", {

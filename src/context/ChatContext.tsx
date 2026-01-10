@@ -14,7 +14,7 @@ interface IMessage {
 
 interface IUser {
   id: string
-  name: string
+  userName: string
   avatar?: string
   joinedAt: Date
 }
@@ -106,7 +106,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     // 建立新使用者物件
     const newUser: IUser = {
       id: `user-${Date.now()}`,
-      name: userName.trim(),
+      userName: userName.trim(),
       joinedAt: new Date(),
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`
     }
@@ -114,7 +114,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     if (isSelf) {
       setCurrentUser(newUser)
     }
-    room.joinChat(newUser.name)
+    room.joinChat(newUser.userName)
     // // 添加到線上使用者列表
     // setUsers((prev) => [...prev, newUser])
 
@@ -140,7 +140,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    const userName = currentUser.name
+    const userName = currentUser.userName
     // 清空當前使用者
     setCurrentUser(null)
 
@@ -153,6 +153,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       timestamp: new Date()
     }
     setMessages((prev) => [...prev, systemMessage])
+    setUsers([])
   }, [currentUser])
 
   /**
@@ -176,13 +177,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     // 監聽 user:joined 事件
     room.socket.on("user:joined", (data: { user: IUser; users: IUser[] }) => {
-      console.log("用戶加入:", data.user.name)
+      console.log("用戶加入:", data.user.userName)
       setUsers(data.users)
     })
 
     // 監聽 user:left 事件
     room.socket.on("user:left", (data: { user: IUser; users: IUser[] }) => {
-      console.log("用戶離開:", data.user.name)
+      console.log("用戶離開:", data.user.userName)
       setUsers(data.users)
     })
 

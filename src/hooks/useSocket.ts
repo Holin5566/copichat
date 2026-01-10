@@ -45,7 +45,6 @@ export function useSocket(
     const [isConnected, setIsConnected] = useState(false);
     const [users, setUsers] = useState<SocketUser[]>([]);
     const [messages, setMessages] = useState<SocketMessage[]>([]);
-    const [isTyping, setIsTyping] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // 初始化 Socket 連接
@@ -173,7 +172,6 @@ export function useSocket(
         isConnected,
         users,
         messages,
-        isTyping,
         error,
         sendMessage,
         joinChat,
