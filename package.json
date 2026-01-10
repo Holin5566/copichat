@@ -11,6 +11,7 @@
     "dev:all": "npm-run-all --parallel dev ws"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "next": "16.0.7",
     "openai": "^6.14.0",
     "react": "19.2.0",

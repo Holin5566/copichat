@@ -5,9 +5,14 @@
  * 運行方式：node server/websocket.js
  */
 
-require('dotenv').config({ path: '.env.local' }); // 載入環境變數
+const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
+
+const envConfig = require('dotenv');
+console.log(`[環境] 載入設定檔: ${path.resolve(__dirname, '.env')}`);
+envConfig.config({ path: path.resolve(__dirname, '.env') });
+
 const { openaiService } = require('./services/openai.service.js');
 
 // 建立 HTTP 伺服器
@@ -23,7 +28,13 @@ const io = new Server(server, {
 
 // 儲存連接的用戶
 const users = new Map();
-
+const aiBot = {
+    id: `ai-bot`,
+    userName: "AI助手",
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=AI`,
+    joinedAt: new Date(),
+};
+users.set(aiBot.id, aiBot)
 // 訊息歷史
 const messageHistory = [];
 
@@ -74,36 +85,38 @@ io.on('connection', (socket) => {
             type: 'message',
         };
 
-        openaiService.chat(`${message.userName}:${message.content}`).then((response) => {
+        // 廣播訊息給所有連接的客戶端
+        io.emit('chat:message', message);
+
+        console.log(`[訊息] ${user.userName}: ${data.content}`);
+
+        // 準備聊天歷史紀錄 (轉換為 OpenAI 格式)
+        const chatHistory = messageHistory.slice(-10).map(msg => ({
+            role: msg.userId === 'ai-bot' ? 'assistant' : 'user',
+            content: msg.userId === 'ai-bot' ? msg.content : `${msg.userName}: ${msg.content}`
+        }));
+
+        openaiService.chat(data.content, chatHistory).then((response) => {
             if (response.success && response.response) {
+                const aiBot = users.get(`ai-bot`)
                 const aiMessage = {
                     id: `${Date.now()}-${Math.random()}`,
-                    userId: 'ai-bot',
-                    userName: 'AI Assistant',
-                    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=ai',
+                    userId: aiBot.id,
+                    userName: aiBot.userName,
+                    avatar: aiBot.avatar,
                     content: response.response,
                     timestamp: new Date(),
                     type: 'message',
                 };
+                console.log(`[訊息] ${aiBot.userName}: ${response.response}`);
                 messageHistory.push(aiMessage);
                 if (messageHistory.length > 100) messageHistory.shift();
                 io.emit('chat:message', aiMessage);
             }
         }).catch(err => {
+            // 忽略錯誤，不要讓 AI 失敗影響到 WebSocket Server
             console.error('AI Error:', err);
         });
-        // 添加到歷史
-        messageHistory.push(message);
-
-        // 保持歷史限制在 100 條訊息
-        if (messageHistory.length > 100) {
-            messageHistory.shift();
-        }
-
-        // 廣播訊息給所有連接的客戶端
-        io.emit('chat:message', message);
-
-        console.log(`[訊息] ${user.userName}: ${data.content}`);
     });
 
     // 用戶離開
